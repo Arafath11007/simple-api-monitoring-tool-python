@@ -1,0 +1,23 @@
+[
+  {
+    "name": "JSONPlaceholder Users (Valid)",
+    "url": "https://jsonplaceholder.typicode.com/users",
+    "expected_status": 200,
+    "max_latency_ms": 3000,
+    "expected_keys": ["id", "name", "email"]
+  },
+  {
+    "name": "JSONPlaceholder Single Post (Valid)",
+    "url": "https://jsonplaceholder.typicode.com/posts/1",
+    "expected_status": 200,
+    "max_latency_ms": 3000,
+    "expected_keys": ["userId", "id", "title"]
+  },
+  {
+    "name": "Deliberate 404 Failure Check",
+    "url": "https://jsonplaceholder.typicode.com/non_existent_page_12345",
+    "expected_status": 200,
+    "max_latency_ms": 3000,
+    "expected_keys": []
+  }
+]

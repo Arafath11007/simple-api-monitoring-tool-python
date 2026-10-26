@@ -1,0 +1,29 @@
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# Reports and Output logs
+reports/
+*.csv
+*.html
+*.log
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE / Editor configs
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
