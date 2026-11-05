@@ -13,6 +13,7 @@ from requests.adapters import HTTPAdapter
 from requests.auth import HTTPBasicAuth
 from urllib3.util.retry import Retry
 from dotenv import load_dotenv
+
 from notifier import notify_failures
 
 # Load environment variables from .env file if it exists
