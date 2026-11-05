@@ -1,279 +1,140 @@
-# API Health & Uptime Monitoring Script
+# API Health Monitor
 
-A high-performance, concurrent Python-based API health and uptime monitoring tool. It reads target endpoint specifications from a JSON configuration file, executes automated health checks concurrently across multiple HTTP verbs, validates latency, status codes, response headers, and payloads, and outputs formatted CSV and HTML reports.
-
----
-
-## Features
-
-- **Concurrent Execution**: Uses Python's `ThreadPoolExecutor` to test multiple endpoints simultaneously without blocking.
-- **Connection Pooling & Resiliency**: Built on `requests.Session` with `HTTPAdapter` and exponential backoff retry on transient 5xx errors.
-- **Advanced HTTP Methods**: Supports `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, and `OPTIONS`.
-- **Custom Payloads & Headers**: Send custom headers, query parameters, form data, or JSON payloads.
-- **Authentication**: Built-in support for Bearer tokens and HTTP Basic Auth.
-- **Secret Interpolation**: Supports `${ENV_VAR}` or `$ENV_VAR` syntax within endpoint configurations to keep secrets out of source control.
-- **Proactive SSL Monitoring**: Pre-verifies SSL certificate expiration thresholds to catch expiring certificates early.
-- **Detailed Reporting**: Generates both historical append-only CSV logs (`api_report.csv`) and a formatted HTML status dashboard (`api_report.html`).
+A production-ready, modular Python 3.11+ service that monitors project APIs on a schedule, validates status codes, response times, and JSON shapes, writes daily HTML and CSV reports, and sends email or Slack alerts on failure with configurable cooldown.
 
 ---
 
-## Project Structure
+## Architecture & Features
+
+- **YAML Configuration**: Supports `config/config.yaml` with schema validation, endpoint timeouts, headers, expected JSON keys and types, and secret resolution from environment variables (`auth_env`).
+- **Concurrent Checks**: Multi-threaded execution using `concurrent.futures.ThreadPoolExecutor` with worker isolation and transient retries.
+- **Deep Response Validation**:
+  - HTTP status code matching.
+  - Latency tracking and `SLOW` classification when threshold is exceeded.
+  - JSON payload validation for expected keys and exact types (`str`, `int`, `float`, `bool`, `list`, `dict`).
+- **Status Classification**:
+  - `PASS`: Endpoint responded with expected status and valid JSON within latency threshold.
+  - `SLOW`: Endpoint passed, but response time exceeded `slow_threshold_ms`.
+  - `FAIL`: Unexpected status code or schema failure.
+  - `ERROR`: Network timeout, DNS failure, or connection refused.
+- **Daily Partitioned Reports**:
+  - `reports/YYYY-MM-DD.csv`: Append-only daily raw data records.
+  - `reports/YYYY-MM-DD.html`: Standalone, self-contained HTML report generated via Jinja2 with inline SVG latency bars, overall health score, and failure diagnostics.
+- **Alerting & Cooldown Management**:
+  - Slack incoming webhook notifications.
+  - SMTP email alerts with STARTTLS.
+  - `alert_state.json`: Suppresses repeated alerts for the same endpoint within `alert_cooldown_minutes`.
+  - Daily summary digest (`--daily-summary`).
+- **Exit Codes for CI / Cron**:
+  - `0`: All checks passed.
+  - `1`: One or more checks failed or errored.
+  - `2`: Configuration or CLI error.
+
+---
+
+## Directory Structure
 
 ```text
 api_monitoring_script/
-├── apis.json           # Target endpoints & test definitions
-├── main.py             # Monitoring engine, checker logic, and report generator
-├── requirements.txt    # Project Python dependencies
-├── api_report.csv      # Historical test run logs (appended each run)
-├── api_report.html     # Color-coded HTML report summary
-└── README.md           # Documentation & deployment guide
+├── api_monitor/             # Core monitoring package
+│   ├── alert_state.py       # Cooldown tracking
+│   ├── checker.py           # HTTP checker with latency & retries
+│   ├── config_loader.py     # YAML loader & schema validator
+│   ├── exceptions.py        # Custom exceptions hierarchy
+│   ├── logger.py            # Rotating file & console logger
+│   ├── monitor.py           # CLI entry point
+│   ├── reporter.py          # Standalone Jinja2 HTML reporter
+│   ├── results.py           # CheckResult dataclass & Status enum
+│   ├── runner.py            # Concurrent ThreadPool runner
+│   ├── storage.py           # Daily CSV storage & aggregation
+│   ├── validator.py         # JSON key and type validator
+│   └── notifier/            # Alert channels
+│       ├── base.py          # Base notifier interface
+│       ├── email_notifier.py # SMTP email sender
+│       └── slack_notifier.py # Slack incoming webhook sender
+├── config/
+│   ├── config.example.yaml  # Example template (no secrets)
+│   └── config.yaml          # Active configuration
+├── docs/samples/            # Sample generated CSV and HTML reports
+├── logs/                    # Rotating log files
+├── reports/                 # Daily generated CSV and HTML reports
+├── tests/                   # Pytest test suite
+├── monitor.py               # Root CLI runner wrapper
+├── pytest.ini               # Pytest configuration
+├── requirements.txt         # Project dependencies
+└── README.md                # Documentation
 ```
 
 ---
 
-## Local Setup & Quickstart
+## Quickstart Guide
 
-### Prerequisites
-- Python 3.8 or higher
-- `pip` and virtual environment support (`venv`)
-
-### Installation
-
-1. **Clone the repository:**
-   ```bash
-   git clone <repository-url>
-   cd api_monitoring_script
-   ```
-
-2. **Create and activate a virtual environment:**
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
-
-3. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Run the monitor:**
-   ```bash
-   python main.py
-   ```
-
----
-
-## Endpoint Configuration (`apis.json`)
-
-Configure your endpoints in [`apis.json`](apis.json). Here is a full example demonstrating the available schema options:
-
-```json
-[
-  {
-    "name": "User List (GET)",
-    "url": "https://api.example.com/users",
-    "method": "GET",
-    "headers": {
-      "Accept": "application/json"
-    },
-    "expected_status": 200,
-    "max_latency_ms": 1500,
-    "expected_keys": ["id", "name", "email"],
-    "expected_headers": {
-      "content-type": "application/json"
-    },
-    "check_ssl_cert": true,
-    "min_ssl_days": 14
-  },
-  {
-    "name": "Create Resource (POST)",
-    "url": "https://api.example.com/items",
-    "method": "POST",
-    "auth": {
-      "type": "bearer",
-      "token": "${API_AUTH_TOKEN}"
-    },
-    "json": {
-      "title": "Health Check Ping",
-      "active": true
-    },
-    "expected_status": [200, 201],
-    "max_latency_ms": 2000,
-    "expected_keys": ["id", "title"]
-  },
-  {
-    "name": "Basic Auth Endpoint",
-    "url": "https://api.example.com/secure-data",
-    "method": "GET",
-    "auth": {
-      "type": "basic",
-      "username": "${BASIC_USER}",
-      "password": "${BASIC_PASS}"
-    },
-    "expected_status": 200
-  }
-]
-```
-
-### Configuration Fields
-
-| Field | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `name` | string | *required* | Human-readable label for the API check |
-| `url` | string | *required* | Target URL (supports `${ENV_VAR}` interpolation) |
-| `method` | string | `"GET"` | HTTP verb (`GET`, `POST`, `PUT`, `DELETE`, etc.) |
-| `headers` | object | `{}` | Custom HTTP headers |
-| `params` | object | `null` | URL query string parameters |
-| `json` | object | `null` | JSON payload to send in the request body |
-| `data` | string/object | `null` | Form-encoded or raw body payload |
-| `auth` | object | `null` | Authentication (`bearer` with `token`, or `basic` with `username`/`password`) |
-| `expected_status` | int / list | `200` | Single HTTP code (e.g. `200`) or array of acceptable codes (e.g. `[200, 204]`) |
-| `max_latency_ms` | int | `3000` | Latency threshold in milliseconds |
-| `expected_keys` | list | `[]` | Keys that must exist in the response JSON |
-| `expected_headers` | object | `{}` | Headers expected in the response (e.g. `{"content-type": "application/json"}`) |
-| `timeout_s` | int | `10` | Request timeout in seconds |
-| `verify_ssl` | bool | `true` | Verify SSL certificates during request |
-| `check_ssl_cert` | bool | `false` | Explicitly verify remote SSL certificate expiration |
-| `min_ssl_days` | int | `14` | Minimum days before SSL expiration before flagging failure |
-
----
-
-## Deployment Options
-
-### Option 1: Linux Systemd Timer (Recommended for Production VM)
-
-To run the monitoring script automatically every 5 minutes on an Ubuntu/Debian/RHEL server:
-
-1. **Deploy project to `/opt/api_monitoring_script`**:
-   ```bash
-   sudo mkdir -p /opt/api_monitoring_script
-   sudo cp -r . /opt/api_monitoring_script
-   cd /opt/api_monitoring_script
-   python3 -m venv venv
-   ./venv/bin/pip install -r requirements.txt
-   ```
-
-2. **Create the systemd service unit** (`/etc/systemd/system/api-monitor.service`):
-   ```ini
-   [Unit]
-   Description=API Health Check Runner
-   After=network.target
-
-   [Service]
-   Type=oneshot
-   User=www-data
-   WorkingDirectory=/opt/api_monitoring_script
-   EnvironmentFile=-/opt/api_monitoring_script/.env
-   ExecStart=/opt/api_monitoring_script/venv/bin/python main.py
-   ```
-
-3. **Create the systemd timer unit** (`/etc/systemd/system/api-monitor.timer`):
-   ```ini
-   [Unit]
-   Description=Run API Health Check every 5 minutes
-
-   [Timer]
-   OnBootSec=1min
-   OnUnitActiveSec=5min
-   Unit=api-monitor.service
-
-   [Install]
-   WantedBy=timers.target
-   ```
-
-4. **Enable and start the timer:**
-   ```bash
-   sudo systemctl daemon-reload
-   sudo systemctl enable --now api-monitor.timer
-   sudo systemctl status api-monitor.timer
-   ```
-
----
-
-### Option 2: Crontab
-
-For lightweight scheduling, configure a cron job on your server:
+### 1. Installation
 
 ```bash
-crontab -e
+# Clone the repository and enter directory
+cd api_monitoring_script
+
+# Create virtual environment and activate
+python3 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-Add the following line to execute every 5 minutes:
+### 2. Configuration
+
+Copy the example configuration to `config/config.yaml`:
+```bash
+cp config/config.example.yaml config/config.yaml
+```
+
+Set any necessary secrets in your environment or `.env`:
+```bash
+export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
+export SMTP_USER="your-user"
+export SMTP_PASSWORD="your-password"
+export AUTH_BEARER_TOKEN="your-api-token"
+```
+
+### 3. Execution
+
+```bash
+# Run one full monitoring cycle
+python monitor.py --config config/config.yaml
+
+# Run check for only a specific endpoint
+python monitor.py --config config/config.yaml --only "Users Health API"
+
+# Send daily summary notification
+python monitor.py --config config/config.yaml --daily-summary
+```
+
+---
+
+## Running Automated Tests
+
+Run the complete test suite with `pytest`:
+```bash
+./venv/bin/pytest
+```
+
+---
+
+## Production Scheduling
+
+### Linux / macOS (Cron)
 ```cron
-*/5 * * * * cd /opt/api_monitoring_script && ./venv/bin/python main.py >> /var/log/api_monitor.log 2>&1
+# Run checks every 5 minutes
+*/5 * * * * cd /opt/api_monitoring_script && ./venv/bin/python monitor.py --config config/config.yaml >> /var/log/api_monitor_cron.log 2>&1
+
+# Send daily summary report every day at 18:00
+0 18 * * * cd /opt/api_monitoring_script && ./venv/bin/python monitor.py --config config/config.yaml --daily-summary >> /var/log/api_monitor_cron.log 2>&1
 ```
 
----
-
-### Option 3: Docker Deployment
-
-You can package and run the monitor in a lightweight Docker container.
-
-1. **Create a `Dockerfile`** (if containerizing):
-   ```dockerfile
-   FROM python:3.11-slim
-   WORKDIR /app
-   COPY requirements.txt .
-   RUN pip install --no-cache-dir -r requirements.txt
-   COPY . .
-   CMD ["python", "main.py"]
-   ```
-
-2. **Build and run:**
-   ```bash
-   docker build -t api-monitor .
-   docker run --rm -v $(pwd)/reports:/app api-monitor
-   ```
-
----
-
-### Option 4: CI/CD Pipeline (e.g., GitHub Actions)
-
-Run health checks on a schedule or as a synthetic post-deployment verification test:
-
-```yaml
-name: API Monitoring Check
-
-on:
-  schedule:
-    - cron: '*/15 * * * *'  # Runs every 15 minutes
-  workflow_dispatch:
-
-jobs:
-  health-check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-      - name: Run Monitoring Script
-        env:
-          API_AUTH_TOKEN: ${{ secrets.API_AUTH_TOKEN }}
-        run: python main.py
-      - name: Upload HTML & CSV Reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: api-reports
-          path: |
-            api_report.html
-            api_report.csv
-```
-
----
-
-## Serving the HTML Dashboard
-
-To view `api_report.html` in real-time on a server:
-
-1. **Quick local preview:**
-   ```bash
-   python -m http.server 8080
-   ```
-   Open `http://localhost:8080/api_report.html` in your browser.
-
-2. **Nginx Integration**:
-   Symlink or copy `api_report.html` into your web root (e.g. `/var/www/html/api-status/`).
+### Windows Task Scheduler
+Create a task running every 5 minutes:
+- **Program/script**: `C:\api_monitoring_script\venv\Scripts\python.exe`
+- **Arguments**: `monitor.py --config config\config.yaml`
+- **Start in**: `C:\api_monitoring_script`

@@ -1,0 +1,67 @@
+# API Health Monitor Configuration Example
+# Copy this file to config.yaml and customize for your environment.
+
+settings:
+  default_timeout_seconds: 10
+  slow_threshold_ms: 1500
+  retries: 2
+  retry_backoff_seconds: 2
+  max_workers: 10
+  output_dir: ./reports
+  log_file: ./logs/monitor.log
+  alert_cooldown_minutes: 60
+
+endpoints:
+  - name: Users Health API
+    url: https://jsonplaceholder.typicode.com/users
+    method: GET
+    expected_status: 200
+    timeout_seconds: 5
+    expected_json:
+      id: int
+      name: str
+      email: str
+    enabled: true
+
+  - name: Single Post Check
+    url: https://jsonplaceholder.typicode.com/posts/1
+    method: GET
+    expected_status: 200
+    expected_json:
+      userId: int
+      id: int
+      title: str
+    enabled: true
+
+  - name: Authenticated Resource Update (PUT)
+    url: https://httpbin.org/put
+    method: PUT
+    headers:
+      Content-Type: application/json
+    auth_env: AUTH_BEARER_TOKEN
+    json:
+      id: 101
+      status: active
+    expected_status: 200
+    expected_json:
+      data: str
+      headers: dict
+      json: dict
+    enabled: true
+
+  - name: Deliberate 404 Check
+    url: https://jsonplaceholder.typicode.com/non_existent_page_12345
+    method: GET
+    expected_status: 200
+    enabled: true
+
+alerts:
+  email:
+    enabled: false
+    smtp_host: smtp.example.com
+    smtp_port: 587
+    from_addr: monitor@example.com
+    to_addrs:
+      - devops@example.com
+  slack:
+    enabled: false
