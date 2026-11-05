@@ -12,6 +12,11 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.auth import HTTPBasicAuth
 from urllib3.util.retry import Retry
+from dotenv import load_dotenv
+from notifier import notify_failures
+
+# Load environment variables from .env file if it exists
+load_dotenv()
 
 # test configuration
 CONFIG_DATA = []
@@ -22,14 +27,29 @@ if not os.path.exists("apis.json"):
         json.dump(CONFIG_DATA, f, indent=2)
     print("✓ Created 'apis.json' configuration file.")
 
-# HELPER UTILITIES: ENV INTERPOLATION & SSL EXPIRY CHECK
+# HELPER UTILITIES: 
+# ENV INTERPOLATION & SSL EXPIRY CHECK
 def resolve_env_vars(data):
-    """Recursively replaces ${VAR_NAME} or $VAR_NAME placeholders from os.environ."""
+    """
+    Recursively replaces ${VAR_NAME}, ${VAR_NAME:-default_value}, or $VAR_NAME placeholders from os.environ.
+    """
     if isinstance(data, str):
         def repl(match):
-            var_name = match.group(1) or match.group(2)
-            return os.environ.get(var_name, match.group(0))
-        return re.sub(r"\$\{([A-Za-z0-9_]+)\}|\$([A-Za-z0-9_]+)", repl, data)
+            # Form: ${VAR:-default}
+            if match.group(1):
+                var_name = match.group(1)
+                default_val = match.group(2) if match.group(2) is not None else ""
+                return os.environ.get(var_name, default_val)
+            # Form: ${VAR}
+            if match.group(3):
+                return os.environ.get(match.group(3), "")
+            # Form: $VAR
+            if match.group(4):
+                return os.environ.get(match.group(4), match.group(0))
+            return match.group(0)
+
+        pattern = r"\$\{([A-Za-z0-9_]+):-([^}]*)\}|\$\{([A-Za-z0-9_]+)\}|\$([A-Za-z0-9_]+)"
+        return re.sub(pattern, repl, data)
     elif isinstance(data, dict):
         return {k: resolve_env_vars(v) for k, v in data.items()}
     elif isinstance(data, list):
@@ -115,9 +135,17 @@ def check_api(api, session=None):
         auth_type = auth_conf.get("type", "").lower()
         if auth_type == "basic":
             auth = HTTPBasicAuth(auth_conf.get("username", ""), auth_conf.get("password", ""))
-        elif auth_type == "bearer":
+        elif auth_type in ("bearer", "token"):
             headers = dict(headers)
-            headers["Authorization"] = f"Bearer {auth_conf.get('token', '')}"
+            token = auth_conf.get("token") or auth_conf.get("api_key") or ""
+            prefix = auth_conf.get("prefix", "Bearer").strip()
+            header_name = auth_conf.get("header_name", "Authorization")
+            headers[header_name] = f"{prefix} {token}".strip() if prefix else token
+        elif auth_type == "api_key":
+            headers = dict(headers)
+            header_name = auth_conf.get("header_name", "X-API-Key")
+            key_val = auth_conf.get("key") or auth_conf.get("token") or ""
+            headers[header_name] = key_val
 
     result = {
         "name": name,
@@ -222,7 +250,11 @@ def check_api(api, session=None):
     return result
 
 # 4. CSV AND HTML GENERATORS
-def save_csv(results, filename="api_report.csv"):
+def save_csv(results, filename=None):
+    today = time.strftime("%Y-%m-%d")
+    if not filename:
+        filename = f"api_report_{today}.csv"
+
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
     file_exists = os.path.exists(filename)
     
@@ -237,7 +269,11 @@ def save_csv(results, filename="api_report.csv"):
 
     print(f"✓ CSV report written to: {os.path.abspath(filename)}")
 
-def save_html(results, filename="api_report.html"):
+def save_html(results, filename=None):
+    today = time.strftime("%Y-%m-%d")
+    if not filename:
+        filename = f"api_report_{today}.html"
+
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
     table_rows = "".join(
         f"""
@@ -310,8 +346,11 @@ def run_monitoring(config_file="apis.json", max_workers=10):
                 print(f"Tested: [{method_label}] {res['name']} ... {status_label}")
 
     print("\n--- Saving Reports ---")
-    save_csv(results, "api_report.csv")
-    save_html(results, "api_report.html")
+    save_csv(results)
+    save_html(results)
+
+    print("\n--- Checking Notifications ---")
+    notify_failures(results)
 
     print("\n--- Run Complete ---")
 

@@ -13,20 +13,44 @@
     "min_ssl_days": 14
   },
   {
-    "name": "JSONPlaceholder Create Post (POST)",
-    "url": "https://jsonplaceholder.typicode.com/posts",
+    "name": "Secure Post Creation (POST with Bearer Token)",
+    "url": "https://httpbin.org/post",
     "method": "POST",
+    "auth": {
+      "type": "bearer",
+      "token": "${AUTH_BEARER_TOKEN:-default_secret_token_123}"
+    },
     "headers": {
-      "Content-Type": "application/json; charset=UTF-8"
+      "Content-Type": "application/json"
     },
     "json": {
-      "title": "API Health Monitor Test",
-      "body": "Automated payload check",
-      "userId": 1
+      "title": "API Health Monitor Post Check",
+      "body": "Automated payload check for POST request",
+      "userId": 101
     },
-    "expected_status": 201,
-    "max_latency_ms": 3000,
-    "expected_keys": ["id", "title"]
+    "expected_status": 200,
+    "max_latency_ms": 4000,
+    "expected_keys": ["data", "headers", "json"]
+  },
+  {
+    "name": "Secure Resource Update (PUT with Bearer Token)",
+    "url": "https://httpbin.org/put",
+    "method": "PUT",
+    "auth": {
+      "type": "bearer",
+      "token": "${AUTH_BEARER_TOKEN:-default_secret_token_123}"
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "json": {
+      "id": 101,
+      "title": "API Health Monitor Updated Title",
+      "status": "active"
+    },
+    "expected_status": 200,
+    "max_latency_ms": 4000,
+    "expected_keys": ["data", "headers", "json"]
   },
   {
     "name": "JSONPlaceholder Delete Post (DELETE)",
