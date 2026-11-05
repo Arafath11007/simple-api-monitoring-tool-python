@@ -1,21 +1,44 @@
 [
   {
-    "name": "JSONPlaceholder Users (Valid)",
+    "name": "JSONPlaceholder Users (GET)",
     "url": "https://jsonplaceholder.typicode.com/users",
+    "method": "GET",
     "expected_status": 200,
     "max_latency_ms": 3000,
-    "expected_keys": ["id", "name", "email"]
+    "expected_keys": ["id", "name", "email"],
+    "expected_headers": {
+      "content-type": "application/json"
+    },
+    "check_ssl_cert": true,
+    "min_ssl_days": 14
   },
   {
-    "name": "JSONPlaceholder Single Post (Valid)",
-    "url": "https://jsonplaceholder.typicode.com/posts/1",
-    "expected_status": 200,
+    "name": "JSONPlaceholder Create Post (POST)",
+    "url": "https://jsonplaceholder.typicode.com/posts",
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/json; charset=UTF-8"
+    },
+    "json": {
+      "title": "API Health Monitor Test",
+      "body": "Automated payload check",
+      "userId": 1
+    },
+    "expected_status": 201,
     "max_latency_ms": 3000,
-    "expected_keys": ["userId", "id", "title"]
+    "expected_keys": ["id", "title"]
+  },
+  {
+    "name": "JSONPlaceholder Delete Post (DELETE)",
+    "url": "https://jsonplaceholder.typicode.com/posts/1",
+    "method": "DELETE",
+    "expected_status": [200, 204],
+    "max_latency_ms": 3000
   },
   {
     "name": "Deliberate 404 Failure Check",
     "url": "https://jsonplaceholder.typicode.com/non_existent_page_12345",
+    "method": "GET",
     "expected_status": 200,
     "max_latency_ms": 3000,
     "expected_keys": []
