@@ -1,0 +1,1116 @@
+settings:
+  default_timeout_seconds: 10
+  slow_threshold_ms: 1500
+  retries: 1
+  retry_backoff_seconds: 1
+  max_workers: 10
+  output_dir: ./reports
+  log_file: ./logs/monitor.log
+  alert_cooldown_minutes: 60
+
+# Automated Login Pre-flight Hook:
+# Automatically logs in to obtain a Bearer token before running tests
+auth_hook:
+  enabled: true
+  login_url: ${APP_BASE_URL:-http://localhost:8000}/api/login
+  method: POST
+  payload:
+    username: ""
+    email: ${LOGIN_EMAIL:-qloop@qloop.com}
+    password: ${LOGIN_PASSWORD:-QLoopAdmin}
+    remember_me: ""
+  token_json_path: token
+  auth_env: APP_BEARER_TOKEN
+
+endpoints:
+- name: '[Client] List clients (/get-all-client)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/get-all-client?company_id=${TEST_COMPANY_ID:-1}&orderByCol=1&orderByType=1
+  method: GET
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Client] Remove client (/remove-client)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/remove-client?id=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Client] Add client (/add-client)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/add-client?id=1&company_id=${TEST_COMPANY_ID:-1}&name=test&short_name=test&tenant_number=test&tenant_id=1&industry=test&contact=test&contact_address=test&contact_address_2=test&telephone=test&email=test
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Client] Get client (/get-client)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/get-client?id=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Client] List project managers (/list-project-managers)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/list-project-managers?client_id=${TEST_CLIENT_ID:-1}&company_id=${TEST_COMPANY_ID:-1}
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Client] Allocate project managers (/allocate-project-managers)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/allocate-project-managers?client_id=${TEST_CLIENT_ID:-1}&project_managers[0]=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Client] Delete project managers (/delete-project-managers)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/delete-project-managers?client_id=${TEST_CLIENT_ID:-1}&project_manager_id=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] List lease (/get-all-lease)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/get-all-lease?company_id=${TEST_COMPANY_ID:-1}&orderByCol=1&filterByClient=${TEST_CLIENT_ID:-1}&filterByAuditor=${TEST_AUDIT_ID:-1}&filterByTrackingId=1&filterByLeaseId=${TEST_LEASE_ID:-1}&filterByLandlordName=test&filterByPropertyName=test&filterByYear=2026-01-01
+  method: GET
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] List pending lease (/get-pending-lease)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/get-pending-lease?orderByCol=1&filterByClient=${TEST_CLIENT_ID:-1}&filterByAuditor=${TEST_AUDIT_ID:-1}&filterByTrackingId=1&filterByLeaseId=${TEST_LEASE_ID:-1}&filterByLandlordName=test&filterByPropertyName=test&filterByYear=test
+  method: GET
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Remove lease (/remove-lease)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/remove-lease?id=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Add lease (/add-lease)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/add-lease?year_range[0]=2026-01-01&year_range[1]=2026-01-01
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] View lease (/get-lease)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/get-lease?id=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] List filter data (/get-filter-data)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/get-filter-data
+  method: GET
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Assign auditor (/assign-auditor)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/assign-auditor?user_id=${TEST_USER_ID:-1}&lease_id=${TEST_LEASE_ID:-1}&assigned_at=2026-01-01
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Start audit (/start-audit)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/start-audit?lease_id=${TEST_LEASE_ID:-1}&auditor_id=${TEST_AUDIT_ID:-1}&assigned_on=2026-01-01&audit_started_date=${TEST_AUDIT_ID:-1}&audit_year=${TEST_AUDIT_ID:-1}&parent_status_id=1&child_status_id=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] List lease (/get-audit-lease)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/get-audit-lease?company_id=${TEST_COMPANY_ID:-1}&orderByCol=1&filterByClient=${TEST_CLIENT_ID:-1}&filterByAuditor=${TEST_AUDIT_ID:-1}&filterByTrackingId=1&filterByLeaseId=${TEST_LEASE_ID:-1}&filterByLandlordName=test&filterByPropertyName=test&filterByYear=2026-01-01
+  method: GET
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Change status (/change-lease-status)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/change-lease-status?lease_id=${TEST_LEASE_ID:-1}&status=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Add  archive lease (/add-archive-lease)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/add-archive-lease?audit_id=${TEST_AUDIT_ID:-1}&archived_date=2026-01-01&parent_status_id=1&child_status_id=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Add audit document (/add-audit-document)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/add-audit-document?audit_id=${TEST_AUDIT_ID:-1}&document_type=test&document_source=test&cost_category_1=test&cost_category_2=test&document_value=test&step=test&year=test&requested_date=2026-01-01&recieved_date=2026-01-01&parent_status_id=1&child_status_id=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] View audit document (/view-audit-document)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/view-audit-document?audit_document_id=${TEST_AUDIT_DOC_ID:-1}
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Update audit document (/update-audit-document)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/update-audit-document?audit_document_id=${TEST_AUDIT_DOC_ID:-1}&audit_id=${TEST_AUDIT_ID:-1}&document_type=test&document_source=test&cost_category_1=test&cost_category_2=test&document_value=test&step=test&year=test&requested_date=2026-01-01&recieved_date=2026-01-01&parent_status_id=1&child_status_id=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Delete audit document (/delete-audit-document)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/delete-audit-document?audit_document_id=${TEST_AUDIT_DOC_ID:-1}
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] List audit documents (/list-all-audit-documents)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/list-all-audit-documents?audit_document_id=${TEST_AUDIT_DOC_ID:-1}
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Update audit document url (/update-audit-document-url)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/update-audit-document-url?audit_document_id=${TEST_AUDIT_DOC_ID:-1}&document_url=test
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Add audit document comment (/add-audit-document-comment)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/add-audit-document-comment?audit_id=${TEST_AUDIT_ID:-1}&referenciable_id=1&comment=${TEST_COMMENT_ID:-1}
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] View audit document comment (/view-audit-document-comment)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/view-audit-document-comment?comment_id=${TEST_COMMENT_ID:-1}
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Update audit document comment (/update-audit-document-comment)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/update-audit-document-comment?comment_id=${TEST_COMMENT_ID:-1}&audit_id=${TEST_AUDIT_ID:-1}&referenciable_id=1&comment=${TEST_COMMENT_ID:-1}
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Delete audit document comment (/delete-audit-document-comment)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/delete-audit-document-comment?comment_id=${TEST_COMMENT_ID:-1}
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] List audit document comment (/list-audit-document-comment)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/list-audit-document-comment?referenciable_id=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Add audit action (/add-audit-action)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/add-audit-action?audit_id=${TEST_AUDIT_ID:-1}&performer_id=1&action_request=test&parent_status_id=1&child_status_id=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] View audit action (/view-audit-action)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/view-audit-action?action_id=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Update audit action (/update-audit-action)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/update-audit-action?action_id=1&audit_id=${TEST_AUDIT_ID:-1}&performer_id=1&action_request=test&resolved_date=2026-01-01&parent_status_id=1&child_status_id=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Delete audit action (/delete-audit-action)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/delete-audit-action?action_id=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] List audit actions (/list-audit-action)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/list-audit-action?audit_id=${TEST_AUDIT_ID:-1}
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Add audit action comment (/add-audit-action-comment)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/add-audit-action-comment?audit_id=${TEST_AUDIT_ID:-1}&referenciable_id=1&comment=${TEST_COMMENT_ID:-1}
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] View audit action comment (/view-audit-action-comment)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/view-audit-action-comment?comment_id=${TEST_COMMENT_ID:-1}
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Update audit action comment (/update-audit-action-comment)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/update-audit-action-comment?comment_id=${TEST_COMMENT_ID:-1}&audit_id=${TEST_AUDIT_ID:-1}&referenciable_id=1&comment=${TEST_COMMENT_ID:-1}
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Delete audit action comment (/delete-audit-action-comment)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/delete-audit-action-comment?comment_id=${TEST_COMMENT_ID:-1}
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] List audit action comment (/list-audit-action-comment)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/list-audit-action-comment?referenciable_id=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Add audit appointment (/add-audit-appointment)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/add-audit-appointment?audit_id=${TEST_AUDIT_ID:-1}&title=test&appoitnment_type=test&appointment_date=2026-01-01&start_time=10:00:00&end_time=10:00:00&note=test
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Update audit appointment (/update-audit-appointment)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/update-audit-appointment?appointment_id=1&audit_id=${TEST_AUDIT_ID:-1}&title=test&appoitnment_type=test&appointment_date=2026-01-01&start_time=10:00:00&end_time=10:00:00&note=test
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Delete audit appointment (/delete-audit-appointment)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/delete-audit-appointment?appointment_id=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] List audit appointments (/list-audit-appointment)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/list-audit-appointment?user_id=${TEST_USER_ID:-1}&from_date=2026-01-01&to_date=2026-01-01
+  method: GET
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Update audit appointment status (/update-audit-appointment-status)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/update-audit-appointment-status?appointment_id=1&appointment_status=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Add audit activity (/add-audit-activity)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/add-audit-activity?audit_id=${TEST_AUDIT_ID:-1}&activity=test&activity_type=test
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] List audit activities (/list-audit-activity)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/list-audit-activity
+  method: GET
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] List parent status (/list-parent-status)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/list-parent-status
+  method: GET
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] List child status (/list-child-status)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/list-child-status?parent_status_id=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Add audit status (/add-audit-status)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/add-audit-status?audit_id=${TEST_AUDIT_ID:-1}&status_comment=${TEST_COMMENT_ID:-1}&client_approval_date=${TEST_CLIENT_ID:-1}&operating_years=test&years_statement_awaited=test&years_statement_received=test&hold_reason=test&problem_code=test&reviewed_items=test&missing_items=test&received_items=test&authorization_letter_date=2026-01-01&closure_date=2026-01-01&approval_date=2026-01-01&item_values=test&parent_status_id=1&child_status_id=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Update audit status (/update-audit-status)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/update-audit-status?audit_status_id=${TEST_AUDIT_STATUS_ID:-1}&audit_id=${TEST_AUDIT_ID:-1}&status_comment=${TEST_COMMENT_ID:-1}&client_approval_date=${TEST_CLIENT_ID:-1}&operating_years=test&years_statement_awaited=test&years_statement_received=test&hold_reason=test&problem_code=test&reviewed_items=test&missing_items=test&received_items=test&authorization_letter_date=2026-01-01&closure_date=2026-01-01&approval_date=2026-01-01&item_values=test&parent_status_id=1&child_status_id=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] View audit status (/view-audit-status)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/view-audit-status?audit_status_id=${TEST_AUDIT_STATUS_ID:-1}
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Delete audit status (/delete-audit-status)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/delete-audit-status?audit_status_id=${TEST_AUDIT_STATUS_ID:-1}
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] List audit status (/list-audit-status)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/list-audit-status?audit_id=${TEST_AUDIT_ID:-1}
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] List auditors (/list-auditers)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/list-auditers?lease_id=${TEST_LEASE_ID:-1}&company_id=${TEST_COMPANY_ID:-1}
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Upadate action resolved date (/update-action-resolved-date)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/update-action-resolved-date?action_id=1&resolved_date=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] Unarchive lease (/unarchive-audit)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/unarchive-audit?audit_id=${TEST_AUDIT_ID:-1}
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[Lease] List archives (/list-archives)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/list-archives?orderByCol=1&filterByClient=${TEST_CLIENT_ID:-1}&filterByAuditor=${TEST_AUDIT_ID:-1}&filterByTrackingId=1&filterByLeaseId=${TEST_LEASE_ID:-1}&filterByLandlordName=test&filterByPropertyName=test&filterByYear=2026-01-01
+  method: GET
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[User] Register User (/register)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/register?first_name=test&last_name=test&email=test&country_id=1&telephone_no=test&term_of_service=1&role_id=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+- name: '[User] Login User (/login)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/login?email=test&password=test
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+- name: '[User] Logout User (/logout)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/logout
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[User] List countries (/get-countries)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/get-countries
+  method: GET
+  headers:
+    Accept: application/json
+  expected_status: 200
+  timeout_seconds: 5
+  enabled: true
+  expected_json:
+    status: bool
+    status_code: int
+    countries: list
+- name: '[User] Password reset (/first-time-password-set)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/first-time-password-set?email=test&password=test
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[User] List onboard users (/get-all-onborad-users)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/get-all-onborad-users?orderByCol=1&orderByType=1
+  method: GET
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[User] Add user (/add-onboard-user)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/add-onboard-user?first_name=test&last_name=test&email=test&country_id=1&telephone_no=test&term_of_service=1&role_id=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[User] View user (/get-user)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/get-user?id=1
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[User] Change user status (/change-user-status)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/change-user-status?id=1&status=true
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[User] Change password (/change-password)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/change-password?current_password=test&new_password=test&c_password=test
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[User] Forgot password (/forgot-password)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/forgot-password?email=test
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+- name: '[User] Reset Password (/reset-password)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/reset-password?new_password=test&c_password=test&email=test
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[User] Get auth user (/get-auth-user)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/get-auth-user
+  method: GET
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[User] Terms and conditions (/add-terms-conditions)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/add-terms-conditions?condition_text=test
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[User] Terms and conditions (/view-terms-conditions)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/view-terms-conditions?condition_id=${TEST_CONDITION_ID:-1}
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[User] Terms and conditions (/update-terms-conditions)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/update-terms-conditions?condition_id=${TEST_CONDITION_ID:-1}&condition_text=test
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[User] Terms and conditions (/delete-terms-conditions)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/delete-terms-conditions?condition_id=${TEST_CONDITION_ID:-1}
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[User] List terms and conditions (/list-terms-conditions)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/list-terms-conditions
+  method: GET
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[User] Terms and conditions (/update-terms-conditions-status)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/update-terms-conditions-status?condition_id=${TEST_CONDITION_ID:-1}&condition_status=true
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[User] List users (/list-users)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/list-users?company_id=${TEST_COMPANY_ID:-1}
+  method: POST
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+  auth_env: APP_BEARER_TOKEN
+- name: '[User] List company (/list-company)'
+  url: ${APP_BASE_URL:-http://localhost:8000}/api/list-company
+  method: GET
+  headers:
+    Accept: application/json
+  expected_status:
+  - 200
+  - 201
+  - 204
+  - 400
+  - 404
+  timeout_seconds: 5
+  enabled: true
+alerts:
+  email:
+    enabled: false
+  slack:
+    enabled: false

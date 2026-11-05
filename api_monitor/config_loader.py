@@ -32,7 +32,7 @@ class Endpoint:
     name: str
     url: str
     method: str = "GET"
-    expected_status: int = 200
+    expected_status: int | list[int] = 200
     timeout_seconds: int | None = None
     headers: dict[str, str] = field(default_factory=dict)
     body: Any = None
@@ -63,10 +63,21 @@ class AlertsConfig:
 
 
 @dataclass
+class AuthHookConfig:
+    enabled: bool = False
+    login_url: str = ""
+    method: str = "POST"
+    payload: dict[str, Any] = field(default_factory=dict)
+    token_json_path: str = "token"  # Key in JSON response containing token, e.g. "token" or "data.token"
+    auth_env: str = "APP_BEARER_TOKEN"  # Variable to populate in os.environ for subsequent checks
+
+
+@dataclass
 class MonitorConfig:
     settings: Settings
     endpoints: list[Endpoint]
     alerts: AlertsConfig
+    auth_hook: AuthHookConfig = field(default_factory=AuthHookConfig)
 
 
 def resolve_env_vars(data: Any) -> Any:
@@ -169,11 +180,18 @@ def load_config(config_path: str | Path) -> MonitorConfig:
             if token:
                 headers["Authorization"] = f"Bearer {token}"
 
+        # Parse expected_status (supports single int or list of ints)
+        raw_status = item.get("expected_status", 200)
+        if isinstance(raw_status, list):
+            expected_status = [int(s) for s in raw_status]
+        else:
+            expected_status = int(raw_status)
+
         ep = Endpoint(
             name=name,
             url=url,
             method=method,
-            expected_status=int(item.get("expected_status", 200)),
+            expected_status=expected_status,
             timeout_seconds=item.get("timeout_seconds"),
             headers=headers,
             body=item.get("data") or item.get("body"),
@@ -202,4 +220,15 @@ def load_config(config_path: str | Path) -> MonitorConfig:
         ),
     )
 
-    return MonitorConfig(settings=settings, endpoints=endpoints, alerts=alerts)
+    # 4. Parse Auth Hook
+    raw_auth_hook = raw_data.get("auth_hook", {})
+    auth_hook = AuthHookConfig(
+        enabled=bool(raw_auth_hook.get("enabled", False)),
+        login_url=str(raw_auth_hook.get("login_url", "")),
+        method=str(raw_auth_hook.get("method", "POST")).upper(),
+        payload=raw_auth_hook.get("payload", {}),
+        token_json_path=str(raw_auth_hook.get("token_json_path", "token")),
+        auth_env=str(raw_auth_hook.get("auth_env", "APP_BEARER_TOKEN")),
+    )
+
+    return MonitorConfig(settings=settings, endpoints=endpoints, alerts=alerts, auth_hook=auth_hook)

@@ -41,8 +41,13 @@ def check_endpoint(endpoint: Endpoint, settings: Settings, session: requests.Ses
             last_http_status = response.status_code
             last_latency_ms = elapsed_ms
 
-            # Check 1: Status code comparison
-            if response.status_code != endpoint.expected_status:
+            # Check 1: Status code comparison (single int or list of accepted statuses)
+            is_status_matched = (
+                response.status_code in endpoint.expected_status
+                if isinstance(endpoint.expected_status, list)
+                else response.status_code == endpoint.expected_status
+            )
+            if not is_status_matched:
                 last_status = Status.FAIL
                 last_error_message = f"Expected HTTP {endpoint.expected_status}, got {response.status_code}"
                 # If 5xx, retry with backoff unless last attempt

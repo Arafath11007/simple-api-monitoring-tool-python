@@ -138,7 +138,9 @@ def generate_daily_html_report(summary: DailySummary, output_dir: str = "./repor
         with tempfile.NamedTemporaryFile("w", dir=str(out_path), delete=False, encoding="utf-8") as tf:
             tf.write(html_content)
             temp_name = tf.name
-        Path(temp_name).replace(target_file)
+        temp_path = Path(temp_name)
+        temp_path.chmod(0o644)  # Ensure readable by standard users/browsers
+        temp_path.replace(target_file)
     except Exception as e:
         raise StorageError(f"Failed to write HTML report {target_file}: {e}")
 

@@ -57,6 +57,22 @@ def main() -> int:
     logger = setup_logger(config.settings.log_file)
     logger.info("=== Starting API Health Check Run ===")
 
+    # Optional Pre-flight Auth Hook: Obtain token dynamically from login API
+    if config.auth_hook.enabled and config.auth_hook.login_url:
+        logger.info(f"Authenticating via login hook: {config.auth_hook.login_url}")
+        token = fetch_auth_token(config.auth_hook, logger)
+        if token:
+            # Populate environment variable so all subsequent endpoints receive the token
+            import os
+            os.environ[config.auth_hook.auth_env] = token
+            # Inject Authorization header into endpoints expecting this auth_env
+            for ep in config.endpoints:
+                if ep.auth_env == config.auth_hook.auth_env:
+                    ep.headers["Authorization"] = f"Bearer {token}"
+            logger.info(f"✓ Bearer token acquired dynamically and injected for {config.auth_hook.auth_env}")
+        else:
+            logger.warning(f"Could not retrieve token from {config.auth_hook.login_url}; proceeding with existing environment")
+
     # Handle --only filter
     endpoints_to_run = config.endpoints
     if args.only:
@@ -90,11 +106,11 @@ def main() -> int:
 
     # 4. Storage & Reporting
     csv_path = append_to_daily_csv(results, output_dir=config.settings.output_dir)
-    logger.info(f"✓ Daily CSV updated: {csv_path}")
+    logger.info(f"✓ Daily CSV updated: {csv_path.resolve()}")
 
     summary = aggregate_daily_csv(csv_path)
     html_path = generate_daily_html_report(summary, output_dir=config.settings.output_dir, config_file=args.config)
-    logger.info(f"✓ Daily HTML report generated: {html_path}")
+    logger.info(f"✓ Daily HTML report generated: {html_path.resolve()}")
 
     # 5. Alert Notifications (with Cooldown)
     cooldown_manager = AlertStateManager()
@@ -153,6 +169,40 @@ def handle_daily_summary(config, logger, config_file: str) -> int:
         EmailNotifier(config.alerts.email).send_daily_summary(text, str(html_path))
 
     return 0
+
+
+def fetch_auth_token(auth_hook, logger) -> str | None:
+    import requests
+    try:
+        method = auth_hook.method.upper()
+        headers = {"Accept": "application/json", "Content-Type": "application/json"}
+        resp = requests.request(
+            method=method,
+            url=auth_hook.login_url,
+            json=auth_hook.payload,
+            headers=headers,
+            timeout=10
+        )
+        if resp.status_code >= 400:
+            logger.warning(f"Login hook returned HTTP {resp.status_code}: {resp.text}")
+            return None
+
+        data = resp.json()
+        # Navigate dot-delimited json path (e.g. "token" or "data.token")
+        keys = auth_hook.token_json_path.split(".")
+        val = data
+        for k in keys:
+            if isinstance(val, dict):
+                val = val.get(k)
+            else:
+                return None
+
+        if isinstance(val, str) and val:
+            return val
+        return None
+    except Exception as e:
+        logger.error(f"Failed to fetch auth token via login hook: {e}")
+        return None
 
 
 if __name__ == "__main__":
