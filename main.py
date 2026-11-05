@@ -23,7 +23,7 @@ if not os.path.exists("apis.json"):
     print("✓ Created 'apis.json' configuration file.")
 
 # HELPER UTILITIES: ENV INTERPOLATION & SSL EXPIRY CHECK
-def resolve_env_vars(data)
+def resolve_env_vars(data):
     """Recursively replaces ${VAR_NAME} or $VAR_NAME placeholders from os.environ."""
     if isinstance(data, str):
         def repl(match):
